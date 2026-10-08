@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../data/auth_repository.dart';
-import 'auth_controller.dart';
+import 'auth_cubit.dart';
+import 'auth_state.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -29,11 +30,10 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _submit() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     FocusScope.of(context).unfocus();
-    await context.read<AuthController>().login(
-      email: _emailController.text,
-      password: _passwordController.text,
-    );
-    // On success AuthGate swaps this screen out; nothing else to do here.
+    await context.read<AuthCubit>().login(
+          email: _emailController.text,
+          password: _passwordController.text,
+        );
   }
 
   @override
@@ -114,31 +114,31 @@ class _LoginScreenState extends State<LoginScreen> {
                       },
                     ),
                     const SizedBox(height: 16),
-                    Consumer<AuthController>(
-                      builder: (context, auth, _) {
+                    BlocBuilder<AuthCubit, AuthState>(
+                      builder: (context, state) {
                         return Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            if (auth.errorMessage != null)
+                            if (state.errorMessage != null)
                               Padding(
                                 padding: const EdgeInsets.only(bottom: 12),
                                 child: Text(
-                                  auth.errorMessage!,
+                                  state.errorMessage!,
                                   textAlign: TextAlign.center,
                                   style: TextStyle(color: theme.colorScheme.error),
                                 ),
                               ),
                             FilledButton(
-                              onPressed: auth.isLoading ? null : _submit,
+                              onPressed: state.isLoading ? null : _submit,
                               style: FilledButton.styleFrom(
                                 minimumSize: const Size.fromHeight(48),
                               ),
-                              child: auth.isLoading
+                              child: state.isLoading
                                   ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(strokeWidth: 2),
-                              )
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                    )
                                   : const Text('Log in'),
                             ),
                           ],

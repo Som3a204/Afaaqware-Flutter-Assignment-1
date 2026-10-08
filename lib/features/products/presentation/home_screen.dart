@@ -1,18 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../auth/presentation/auth_controller.dart';
-import '../../cart/presentation/cart_controller.dart';
+import '../../auth/presentation/auth_cubit.dart';
+import '../../cart/presentation/cart_cubit.dart';
 import '../../cart/presentation/cart_screen.dart';
+import '../../cart/presentation/cart_state.dart';
 import '../models/product.dart';
-import 'product_controller.dart';
+import 'product_cubit.dart';
+import 'product_state.dart';
 import 'widgets/product_card.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   void _addToCart(BuildContext context, Product product) {
-    context.read<CartController>().add(product);
+    context.read<CartCubit>().add(product);
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(
@@ -25,8 +27,8 @@ class HomeScreen extends StatelessWidget {
 
   void _logout(BuildContext context) {
     // The cart belongs to the session, so clear it with the user.
-    context.read<CartController>().clear();
-    context.read<AuthController>().logout();
+    context.read<CartCubit>().clear();
+    context.read<AuthCubit>().logout();
   }
 
   @override
@@ -35,10 +37,10 @@ class HomeScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Shop'),
         actions: [
-          // Selector: only the badge rebuilds when the cart count changes.
-          Selector<CartController, int>(
-            selector: (_, cart) => cart.totalQuantity,
-            builder: (context, count, _) => IconButton(
+          // BlocSelector: only the badge rebuilds when the quantity changes.
+          BlocSelector<CartCubit, CartState, int>(
+            selector: (state) => state.totalQuantity,
+            builder: (context, count) => IconButton(
               tooltip: 'Cart',
               icon: Badge(
                 isLabelVisible: count > 0,
@@ -57,19 +59,20 @@ class HomeScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: Consumer<ProductController>(
-        builder: (context, controller, _) {
-          switch (controller.status) {
+      body: BlocBuilder<ProductCubit, ProductState>(
+        builder: (context, state) {
+          final cubit = context.read<ProductCubit>();
+          switch (state.status) {
             case LoadStatus.loading:
               return const Center(child: CircularProgressIndicator());
             case LoadStatus.error:
-              return _ErrorView(onRetry: controller.load);
+              return _ErrorView(onRetry: cubit.load);
             case LoadStatus.loaded:
-              if (controller.products.isEmpty) {
+              if (state.products.isEmpty) {
                 return const Center(child: Text('No products available'));
               }
               return RefreshIndicator(
-                onRefresh: controller.load,
+                onRefresh: cubit.load,
                 child: GridView.builder(
                   padding: const EdgeInsets.all(12),
                   physics: const AlwaysScrollableScrollPhysics(),
@@ -79,9 +82,9 @@ class HomeScreen extends StatelessWidget {
                     crossAxisSpacing: 12,
                     mainAxisSpacing: 12,
                   ),
-                  itemCount: controller.products.length,
+                  itemCount: state.products.length,
                   itemBuilder: (context, index) {
-                    final product = controller.products[index];
+                    final product = state.products[index];
                     return ProductCard(
                       product: product,
                       onAddToCart: () => _addToCart(context, product),

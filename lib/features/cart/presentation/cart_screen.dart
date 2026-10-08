@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/money.dart';
-import 'cart_controller.dart';
+import 'cart_cubit.dart';
+import 'cart_state.dart';
 import 'widgets/cart_item_tile.dart';
 
 class CartScreen extends StatelessWidget {
   const CartScreen({super.key});
 
   void _remove(BuildContext context, String productId) {
-    final cart = context.read<CartController>();
+    final cart = context.read<CartCubit>();
     final removed = cart.remove(productId);
     if (removed == null) return;
     ScaffoldMessenger.of(context)
@@ -27,33 +28,40 @@ class CartScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cart = context.watch<CartController>();
+    final cart = context.read<CartCubit>();
 
     return Scaffold(
       appBar: AppBar(title: const Text('Your cart')),
-      body: cart.isEmpty
-          ? const _EmptyCart()
-          : Column(
-              children: [
-                Expanded(
-                  child: ListView.separated(
-                    itemCount: cart.items.length,
-                    separatorBuilder: (_, __) => const Divider(height: 1),
-                    itemBuilder: (context, index) {
-                      final item = cart.items[index];
-                      return CartItemTile(
-                        key: ValueKey(item.product.id),
-                        item: item,
-                        onIncrement: () => cart.increment(item.product.id),
-                        onDecrement: () => cart.decrement(item.product.id),
-                        onRemove: () => _remove(context, item.product.id),
-                      );
-                    },
-                  ),
+      body: BlocBuilder<CartCubit, CartState>(
+        builder: (context, state) {
+          if (state.isEmpty) return const _EmptyCart();
+
+          return Column(
+            children: [
+              Expanded(
+                child: ListView.separated(
+                  itemCount: state.items.length,
+                  separatorBuilder: (_, __) => const Divider(height: 1),
+                  itemBuilder: (context, index) {
+                    final item = state.items[index];
+                    return CartItemTile(
+                      key: ValueKey(item.product.id),
+                      item: item,
+                      onIncrement: () => cart.increment(item.product.id),
+                      onDecrement: () => cart.decrement(item.product.id),
+                      onRemove: () => _remove(context, item.product.id),
+                    );
+                  },
                 ),
-                _TotalBar(totalCents: cart.totalCents, itemCount: cart.totalQuantity),
-              ],
-            ),
+              ),
+              _TotalBar(
+                totalCents: state.totalCents,
+                itemCount: state.totalQuantity,
+              ),
+            ],
+          );
+        },
+      ),
     );
   }
 }

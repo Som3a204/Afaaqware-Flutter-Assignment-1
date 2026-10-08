@@ -1,7 +1,6 @@
-import 'package:flutter/foundation.dart';
+import 'package:equatable/equatable.dart';
 
-@immutable
-class Product {
+class Product extends Equatable {
   const Product({
     required this.id,
     required this.name,
@@ -13,4 +12,7 @@ class Product {
   final String name;
   final int priceCents;
   final String imageUrl;
+
+  @override
+  List<Object> get props => [id, name, priceCents, imageUrl];
 }

@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'features/auth/data/auth_repository.dart';
-import 'features/auth/presentation/auth_controller.dart';
+import 'features/auth/presentation/auth_cubit.dart';
 import 'features/auth/presentation/login_screen.dart';
-import 'features/cart/presentation/cart_controller.dart';
+import 'features/cart/presentation/cart_cubit.dart';
 import 'features/products/data/product_repository.dart';
 import 'features/products/presentation/home_screen.dart';
-import 'features/products/presentation/product_controller.dart';
+import 'features/products/presentation/product_cubit.dart';
 
 /// Composition root: all long-lived state is created once, above the
 /// [MaterialApp], so it survives navigation between screens.
@@ -16,14 +16,12 @@ class App extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MultiProvider(
+    return MultiBlocProvider(
       providers: [
-        ChangeNotifierProvider(
-          create: (_) => AuthController(MockAuthRepository()),
-        ),
-        ChangeNotifierProvider(create: (_) => CartController()),
-        ChangeNotifierProvider(
-          create: (_) => ProductController(MockProductRepository())..load(),
+        BlocProvider(create: (_) => AuthCubit(MockAuthRepository())),
+        BlocProvider(create: (_) => CartCubit()),
+        BlocProvider(
+          create: (_) => ProductCubit(MockProductRepository())..load(),
         ),
       ],
       child: MaterialApp(
@@ -47,7 +45,7 @@ class AuthGate extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isAuthenticated =
-    context.select<AuthController, bool>((a) => a.isAuthenticated);
+        context.select<AuthCubit, bool>((cubit) => cubit.state.isAuthenticated);
     return isAuthenticated ? const HomeScreen() : const LoginScreen();
   }
 }
